@@ -14,9 +14,16 @@ pub enum ElevationRules {
     #[default]
     Vanilla,
     /// The 1.151 rules. Free-standing parts (swivel guns, engines, legs) no longer block a gun
-    /// that sits on the same height level. The KAZ module has its own flag,
-    /// `classic_kaz`.
+    /// that sits on the same height level, and the KAZ module again accepts targets within
+    /// 68.75 degrees of its facing and treats its rear cone like 1.151 did (34 degrees wide,
+    /// blocked above 50%).
     Classic,
+    /// [`Classic`](Self::Classic), and in addition empty hull does not count as blocking the
+    /// KAZ module's arc: trusses (`MDL_FERMA*`, all sizes) are left out of its sector scan.
+    /// Hull blocks, the command bridge, hardpoints (`MDL_HARD*`), armor and modules still
+    /// block it. This last part is not a 1.151 rule.
+    #[serde(rename = "classic_kaz")]
+    ClassicKaz,
     /// The 1.163 rules.
     Modern,
 }
@@ -24,6 +31,11 @@ pub enum ElevationRules {
 impl ElevationRules {
     /// Whether the 1.151 rules should be patched in.
     pub fn is_classic(self) -> bool {
-        self == Self::Classic
+        matches!(self, Self::Classic | Self::ClassicKaz)
+    }
+
+    /// Whether trusses should stop blocking the KAZ module's arc.
+    pub fn exempts_trusses(self) -> bool {
+        self == Self::ClassicKaz
     }
 }

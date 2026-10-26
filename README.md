@@ -119,12 +119,12 @@ Omit `gun_ammo` (or set it to `null`) for a loadout without a gun. Existing conf
 
 The selected definition must be an aircraft-gun ammo (`reticle` 4) with a positive gun capacity. If the definition is missing or invalid, the game falls back to `ITEM_GUN37` for that launch.
 
-## Elevation rules and classic KAZ (1.163 only)
-`"elevation_rules"` (top level of `qol.json`) chooses the firing-arc rules for guns: `"vanilla"` (the default, the game's own), `"classic"` (the Steam 1.151 rules) or `"modern"` (the 1.163 rules; the same as `vanilla` for now). `classic` makes free-standing parts (swivel guns, engines, legs) stop blocking the firing arc of a gun on the same height level (1.163 added one level to such a part when it checks who blocks a gun).
+## Elevation rules (1.163 only)
+`"elevation_rules"` (top level of `qol.json`) chooses the firing-arc rules: `"vanilla"` (the default, the game's own), `"classic"` (the Steam 1.151 rules), `"modern"` (the 1.163 rules; the same as `vanilla` for now) or `"classic_kaz"`. `classic` does three things:
+* free-standing parts (swivel guns, engines, legs) no longer block the firing arc of a gun on the same height level (1.163 added one level to such a part when it checks who blocks a gun);
+* the KAZ module accepts targets within 68.75 degrees of its facing again (1.163: 45 degrees);
+* the KAZ "covered" test uses the 1.151 rear cone (34 degrees wide) and the 50% threshold (1.163: 90 degrees and 15%), done in code, so `OL.seria` stays untouched.
 
-`"classic_kaz": true` (default `false`) makes the KAZ module less strict, like Steam 1.151:
-* it accepts targets within 68.75 degrees of its facing again (1.163: 45 degrees);
-* its "covered" test uses the 1.151 rear cone (34 degrees wide) and the 50% threshold (1.163: 90 degrees and 15%), done in code, so `OL.seria` stays untouched;
-* trusses (`MDL_FERMA*`, all sizes) no longer count as blocking its arc. This one is not a 1.151 rule. Hull blocks, the command bridge, hardpoints (`MDL_HARD*`), armor and modules still block.
+`classic_kaz` is `classic` plus one rule that is not from 1.151: empty hull does not block the KAZ's arc. Trusses (`MDL_FERMA*`, all sizes) are left out of the KAZ's sector scan; hull blocks, the command bridge, hardpoints (`MDL_HARD*`), armor and modules still block it.
 
-Add the keys by hand to an existing `qol.json`; a missing key means the game's own behaviour. The log shows a line for each patch; if the game code is not what was analysed, the log says so and that patch is skipped. Not tested in the game yet.
+Add `"elevation_rules": "classic"` (or `"classic_kaz"`) by hand to an existing `qol.json`; a missing key means `vanilla`. The log shows a line for each patch; if the game code is not what was analysed, the log says so and that patch is skipped. Not tested in the game yet.

@@ -1,5 +1,5 @@
-//! Ports the Steam 1.151 firing-arc rules to Steam 1.163 (the `classic` elevation rules and the
-//! `classic_kaz` flag).
+//! Ports the Steam 1.151 firing-arc rules to Steam 1.163 (`elevation_rules` `classic` and
+//! `classic_kaz`).
 //!
 //! Each patch is applied only when the bytes are what was analysed:
 //!
@@ -17,7 +17,7 @@
 //!    sector scan, so they do not count as blocking its arc. Hull blocks, the command bridge,
 //!    hardpoints (`MDL_HARD*`), armor and modules still do.
 //!
-//! Rule 1 is `elevation_rules: classic`; rules 2 to 4 are `classic_kaz`.
+//! Rules 1 to 3 are `classic` (and `classic_kaz`); rule 4 is `classic_kaz` only.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -151,22 +151,17 @@ unsafe fn float_at(address: usize) -> f32 {
     (address as *const f32).read_unaligned()
 }
 
-/// Prepares the classic firing-arc patches. `rules` covers the guns, `classic_kaz` the KAZ module.
-pub unsafe fn patch_elevation_rules(
-    session: &mut PatchSession,
-    rules: ElevationRules,
-    classic_kaz: bool,
-) -> Result {
-    if rules.is_classic() {
-        patch_guns(session)?;
-    } else {
+/// Prepares the classic firing-arc patches. Does nothing for `vanilla` and `modern`.
+pub unsafe fn patch_elevation_rules(session: &mut PatchSession, rules: ElevationRules) -> Result {
+    if !rules.is_classic() {
         log::info!("Elevation rules are the game's own, leaving them alone");
+        return Ok(());
     }
 
-    if classic_kaz {
-        patch_kaz(session)?;
-    } else {
-        log::info!("KAZ rules are the game's own, leaving them alone");
+    patch_guns(session)?;
+    patch_kaz(session)?;
+    if rules.exempts_trusses() {
+        patch_trusses(session)?;
     }
     Ok(())
 }
@@ -182,7 +177,7 @@ unsafe fn patch_guns(session: &mut PatchSession) -> Result {
     Ok(())
 }
 
-/// The three 1.151 KAZ rules and the truss exemption.
+/// The two 1.151 KAZ rules: target cone and covered test.
 unsafe fn patch_kaz(session: &mut PatchSession) -> Result {
     let cone_ok = float_at(PI_OVER_4_ADDRESS) == std::f32::consts::FRAC_PI_4
         && float_at(CONE_1151_ADDRESS) == 1.2
@@ -193,18 +188,23 @@ unsafe fn patch_kaz(session: &mut PatchSession) -> Result {
         for (at, _) in CONE_SITES {
             session.overwrite(at, &movss_xmm1(at, CONE_1151_ADDRESS))?;
         }
-        log::info!("Classic KAZ: target cone widened to 1.2 rad");
+        log::info!("Elevation rules: KAZ target cone widened to 1.2 rad");
     } else {
-        log::error!("Classic KAZ: cone code is not what was expected, leaving it alone");
+        log::error!("Elevation rules: KAZ cone code is not what was expected, leaving it alone");
     }
 
     if read::<17>(COVERED_SITE) == COVERED_ORIGINAL && float_at(HALF_ADDRESS) == 0.5 {
         session.overwrite(COVERED_SITE, &covered_patch())?;
-        log::info!("Classic KAZ: covered test uses the 1.151 rear cone and 50% threshold");
+        log::info!("Elevation rules: KAZ covered test uses the 1.151 rear cone and 50% threshold");
     } else {
-        log::error!("Classic KAZ: covered code is not what was expected, leaving it alone");
+        log::error!("Elevation rules: KAZ covered code is not what was expected, leaving it alone");
     }
 
+    Ok(())
+}
+
+/// Trusses stop counting as blockers in the KAZ's sector scan.
+unsafe fn patch_trusses(session: &mut PatchSession) -> Result {
     if read::<7>(SHOOTER_SITE) == SHOOTER_ORIGINAL
         && read::<8>(CANDIDATE_LOOP_SITE) == CANDIDATE_LOOP_ORIGINAL
     {
@@ -235,9 +235,11 @@ unsafe fn patch_kaz(session: &mut PatchSession) -> Result {
             CANDIDATE_LOOP_ORIGINAL.len(),
             candidate,
         )?;
-        log::info!("Classic KAZ: trusses no longer block the KAZ's arc");
+        log::info!("Elevation rules: trusses no longer block the KAZ's arc");
     } else {
-        log::error!("Classic KAZ: ray scan code is not what was expected, trusses keep blocking");
+        log::error!(
+            "Elevation rules: ray scan code is not what was expected, trusses keep blocking"
+        );
     }
     Ok(())
 }
