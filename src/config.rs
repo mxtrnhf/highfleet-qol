@@ -98,13 +98,21 @@ pub struct Config {
     /// Uses the game's own curve by default.
     #[serde(default)]
     pub speed: SpeedConfig,
-    /// Chooses the firing-arc rules: `vanilla` (the game's own), `classic` (the 1.151 rules:
-    /// free-standing parts do not block guns on the same height level, and the KAZ module
-    /// is less strict) or `modern` (the 1.163 rules). Only has an effect on Steam 1.163.
+    /// Chooses the firing-arc rules for guns: `vanilla` (the game's own), `classic` (the 1.151
+    /// rules: free-standing parts do not block guns on the same height level) or `modern` (the
+    /// 1.163 rules). Only has an effect on Steam 1.163.
     ///
     /// Uses the game's own rules by default.
     #[serde(default)]
     pub elevation_rules: ElevationRules,
+    /// Makes the KAZ module less strict, like Steam 1.151: it accepts targets within 68.75
+    /// degrees of its facing, its blocked-cone test is narrower with a 50% threshold, and
+    /// trusses (`MDL_FERMA*`) do not count as blocking its arc. Blocks, the command bridge,
+    /// hardpoints, armor and modules still do. Only has an effect on Steam 1.163.
+    ///
+    /// Disabled by default.
+    #[serde(default)]
+    pub classic_kaz: bool,
 }
 
 /// Controls how often and in what quantity one part can appear in city shops.
@@ -195,6 +203,7 @@ impl Default for Config {
             refuel: RefuelConfig::default(),
             speed: SpeedConfig::default(),
             elevation_rules: ElevationRules::default(),
+            classic_kaz: false,
         }
     }
 }
@@ -254,15 +263,20 @@ mod tests {
         assert_eq!(config.refuel.player_rate_multiplier, 1.0);
         assert_eq!(config.speed.preset, SpeedPreset::Vanilla);
         assert_eq!(config.elevation_rules, ElevationRules::Vanilla);
+        assert!(!config.classic_kaz);
     }
 
     #[test]
     fn elevation_rules_are_read() {
-        let json =
-            OLD_CONFIG.replacen("\"planes\"", r#""elevation_rules": "classic", "planes""#, 1);
+        let json = OLD_CONFIG.replacen(
+            "\"planes\"",
+            r#""elevation_rules": "classic", "classic_kaz": true, "planes""#,
+            1,
+        );
         let config: Config = serde_json::from_str(&json).unwrap();
 
         assert_eq!(config.elevation_rules, ElevationRules::Classic);
+        assert!(config.classic_kaz);
     }
 
     #[test]

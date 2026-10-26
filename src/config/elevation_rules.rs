@@ -14,9 +14,8 @@ pub enum ElevationRules {
     #[default]
     Vanilla,
     /// The 1.151 rules. Free-standing parts (swivel guns, engines, legs) no longer block a gun
-    /// that sits on the same height level, and the KAZ module again accepts targets within
-    /// 68.75 degrees of its facing and treats its rear cone like 1.151 did (34 degrees wide,
-    /// blocked above 50%).
+    /// that sits on the same height level. The KAZ module has its own flag,
+    /// `classic_kaz`.
     Classic,
     /// The 1.163 rules.
     Modern,

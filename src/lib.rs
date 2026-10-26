@@ -162,7 +162,8 @@ unsafe extern "C" fn init() -> bool {
             prepare_patch!(speed::patch_speed(&mut patch_session, &config.speed));
             prepare_patch!(elevation_rules::patch_elevation_rules(
                 &mut patch_session,
-                config.elevation_rules
+                config.elevation_rules,
+                config.classic_kaz
             ));
         }
     }
