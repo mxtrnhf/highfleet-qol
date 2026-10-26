@@ -118,3 +118,11 @@ A loadout can use `gun_ammo` to select any aircraft-gun ammo definition availabl
 Omit `gun_ammo` (or set it to `null`) for a loadout without a gun. Existing configurations using `"has_gun37mm": true` remain supported and are interpreted as `"gun_ammo": "ITEM_GUN37"`.
 
 The selected definition must be an aircraft-gun ammo (`reticle` 4) with a positive gun capacity. If the definition is missing or invalid, the game falls back to `ITEM_GUN37` for that launch.
+
+## Elevation rules (1.163 only)
+`"elevation_rules"` (top level of `qol.json`) chooses the firing-arc rules: `"vanilla"` (the default, the game's own), `"classic"` (the Steam 1.151 rules) or `"modern"` (the 1.163 rules; the same as `vanilla` for now). `classic` does three things:
+* free-standing parts (swivel guns, engines, legs) no longer block the firing arc of a gun on the same height level (1.163 added one level to such a part when it checks who blocks a gun);
+* the KAZ module accepts targets within 68.75 degrees of its facing again (1.163: 45 degrees);
+* the KAZ "covered" test uses the 1.151 rear cone (34 degrees wide) and the 50% threshold (1.163: 90 degrees and 15%), done in code, so `OL.seria` stays untouched.
+
+Add `"elevation_rules": "classic"` by hand to an existing `qol.json`; a missing key means `vanilla`. The log shows a line for each patch; if the game code is not what was analysed, the log says so and that patch is skipped. Not tested in the game yet.
